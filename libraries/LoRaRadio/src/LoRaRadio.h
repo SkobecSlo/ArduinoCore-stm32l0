@@ -126,6 +126,7 @@ public:
     void onReceive(Callback callback);
     void onCad(void(*callback)(void));
     void onCad(Callback callback);
+    int16_t readRssi();
 
 private:
     bool              _initialized;

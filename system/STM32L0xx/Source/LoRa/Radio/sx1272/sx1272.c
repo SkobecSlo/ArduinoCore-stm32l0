@@ -278,7 +278,7 @@ void SX1272SetChannel( uint32_t freq )
     SX1272Release( );
 }
 
-bool SX1272IsChannelFree( RadioModems_t modem, uint32_t freq, int16_t rssiThresh, uint32_t maxCarrierSenseTime )
+int16_t SX1272IsChannelFree( RadioModems_t modem, uint32_t freq, int16_t rssiThresh, uint32_t maxCarrierSenseTime )
 {
     bool status = true;
     int16_t rssi = 0;
@@ -295,7 +295,7 @@ bool SX1272IsChannelFree( RadioModems_t modem, uint32_t freq, int16_t rssiThresh
     SX1272Delay( 1 );
 
     carrierSenseTime = armv6m_systick_millis( );
-
+    /*
     // Perform carrier sense for maxCarrierSenseTime
     while( (uint32_t)( armv6m_systick_millis( ) - carrierSenseTime ) < maxCarrierSenseTime )
     {
@@ -307,10 +307,11 @@ bool SX1272IsChannelFree( RadioModems_t modem, uint32_t freq, int16_t rssiThresh
             break;
         }
     }
-
+    */
+    rssi = SX1272ReadRssi( );
     SX1272SetStby( );
 
-    return status;
+    return rssi;
 }
 
 /*!

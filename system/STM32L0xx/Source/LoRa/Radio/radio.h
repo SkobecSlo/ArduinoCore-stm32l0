@@ -146,7 +146,7 @@ struct Radio_s
      *
      * \retval isFree         [true: Channel is free, false: Channel is not free]
      */
-    bool    ( *IsChannelFree )( RadioModems_t modem, uint32_t freq, int16_t rssiThresh, uint32_t maxCarrierSenseTime );
+    int16_t    ( *IsChannelFree )( RadioModems_t modem, uint32_t freq, int16_t rssiThresh, uint32_t maxCarrierSenseTime );
     /*!
      * \brief Sets the reception parameters
      *

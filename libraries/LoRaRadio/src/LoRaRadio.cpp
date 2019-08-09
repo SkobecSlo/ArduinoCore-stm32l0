@@ -1031,4 +1031,30 @@ void LoRaRadioClass::__CadDone(bool cadDetected)
     self->_cadCallback.queue();
 }
 
+int16_t LoRaRadioClass::readRssi()
+{
+    
+    IRQn_Type irq;
+    bool isChannelFree;
+
+    if (!_initialized) {
+        return 0;
+    }
+
+    irq = (IRQn_Type)((__get_IPSR() & 0x1ff) - 16);
+
+    if (irq != Reset_IRQn) {
+        return 0;
+    }
+
+    if (!LoRaRadioCall(__Sense)) {
+        return 0;
+    }
+    
+
+    int16_t rssi = Radio.IsChannelFree(MODEM_LORA, _frequency, -65, 10);
+
+    _busy = 0;
+    return rssi;
+}
 LoRaRadioClass LoRaRadio;

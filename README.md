@@ -1,83 +1,135 @@
-# Arduino Core for STM32L0 based boards
+# Spectrum analyzer with Murata's Lora module
 
-## What is it ?
+## Intro
+Possile implementation of spectrum analyzer with Murata's LoRa module.
 
-ArduinoCore-stm32l0 is targeted at ultra low power scenarios, sensor hubs, with LoRaWAN connectivity.
+## Board
+STMicro's Discovery Board [B-L072Z-LRWAN1](https://www.st.com/en/evaluation-tools/b-l072z-lrwan1.html)
+
+## The description of application  
+The goal of this project is to see if Murata's LoRa module could be used as a spectrum analyzer.
+
+[ArduinoCore](https://github.com/GrumpyOldPizza/ArduinoCore-stm32l0) for STM32l0 that was made by [GrumpyOldPizza](https://github.com/GrumpyOldPizza) is used.
+
+The starting point of this project is to implement the readings of RSSI values from RSSI register from SX1276 chip.
+
+Going through Semtech's documentation for SX1276 chip and the source code provided by GrumpyOldPizza it seems that implementing readings of RSSI values should be possible. A function called SX1276ReadRssi is already implemented in sx1276.c file and should be accessible as a method of Radio object which is defined and initialized in the specific radio board implementation.
+
+### Radio.Rssi() approach
+New LoraRadio method called readRssi() which was created was only calling Radio.Rssi() method and returning its output. Example of Spectrum_Scan.ino sketch and implementation of LoraRadio.readRssi()can be seen below.
+
+```
+#include "LoRaRadio.h"
+
+void setup( void )
+{
+    Serial.begin(115200);
+    
+    while (!Serial) { }
+
+    LoRaRadio.begin(868000000);
+
+    LoRaRadio.setFrequency(868000000);
+    LoRaRadio.setTxPower(14);
+    LoRaRadio.setBandwidth(LoRaRadio.BW_125);
+    LoRaRadio.setSpreadingFactor(LoRaRadio.SF_7);
+    LoRaRadio.setCodingRate(LoRaRadio.CR_4_5);
+    LoRaRadio.setLnaBoost(true);
+}
+
+void loop( void )
+{
+    Serial.println(LoRaRadio.readRssi());
+    delay(100);
+}
+```
+```
+int16_t LoRaRadioClass::readRssi()
+{
+    int16_t rssi = Radio.Rssi();
+    return rssi;
+}
+```
+
+The only number that was recived on serial monitor was -157 which is a RSSI offset value, which means that RSSI register was returning 0 all the time. This was happening even when another nearby Lora Module board was transmiting packets on same frequency.  
+
+### Radio.IsChannelFree() approach
+In the file LoRaRadio.cpp method LoraRadio.sense() was found which uses Radio.IsChannelFree() method to check RSSI value at certain frequency and compares it to threshold value to determine if channel is free. 
+
+The LoraRadio.sense() worked as expected, it was returning 1 when another Lora Module was off and combination of 1 and 0 when Lora Module was transmiting. 
 
 
-## Supported boards
+Radio.IsChannelFree() method was modified so that it does not make any comparisons with threshold value but that it only outputs RSSI value that is returned by SX1276ReadRssi() function. Example of LoraRadio.readRssi() method which calls Radio.IsChannelFree() can be seen below.
 
-### Tlera Corp
- * [Grasshopper-L082CZ](https://www.tindie.com/products/TleraCorp/grasshopper-lora-development-board)
- * [Cricket-L082CZ](https://www.tindie.com/products/TleraCorp/cricket-lorawangnss-asset-tracker)
- * [Cicada-L082CZ](https://www.tindie.com/products/TleraCorp/lorasensortile)
+```
+int16_t LoRaRadioClass::readRssi()
+{
+    
+    IRQn_Type irq;
+    bool isChannelFree;
 
-### STMicroelectronics
- * [B-L072Z-LRWAN1](http://www.st.com/en/evaluation-tools/b-l072z-lrwan1.html)
- * [P-NUCLEO-LRWAN1](http://www.st.com/en/evaluation-tools/p-nucleo-lrwan1.html)
- * [NUCLEO-L053R8](http://www.st.com/en/evaluation-tools/nucleo-l053r8.html)
- * [NUCLEO-L073RZ](http://www.st.com/en/evaluation-tools/nucleo-l073rz.html)
+    if (!_initialized) {
+        return 0;
+    }
 
+    irq = (IRQn_Type)((__get_IPSR() & 0x1ff) - 16);
 
-## Installing
+    if (irq != Reset_IRQn) {
+        return 0;
+    }
 
-### Board Manager
+    if (!LoRaRadioCall(__Sense)) {
+        return 0;
+    }
+    
 
- 1. [Download and install the Arduino IDE](https://www.arduino.cc/en/Main/Software) (at least version v1.6.8)
- 2. Start the Arduino IDE
- 3. Go into Preferences
- 4. Add ```https://grumpyoldpizza.github.io/ArduinoCore-stm32l0/package_stm32l0_boards_index.json``` as an "Additional Board Manager URL"
- 5. Open the Boards Manager from the Tools -> Board menu and install "Tlera Corp STM32L0 Boards"
- 6. Select your STM32L0 board from the Tools -> Board menu
+    int16_t rssi = Radio.IsChannelFree(MODEM_LORA, _frequency, -65, 10);
 
-#### OS Specific Setup
+    _busy = 0;
+    return rssi;
+}
+```
+```
+int16_t SX1276IsChannelFree( RadioModems_t modem, uint32_t freq, int16_t rssiThresh, uint32_t maxCarrierSenseTime )
+{
+    bool status = true;
+    int16_t rssi = 0;
+    uint32_t carrierSenseTime = 0;
 
-##### Linux
+    SX1276SetStby( );
 
- 1. Go to ~/.arduino15/packages/TleraCorp/hardware/stm32l0/```<VERSION>```/drivers/linux/
- 2. sudo cp *.rules /etc/udev/rules.d
- 3. reboot
+    SX1276SetModem( modem );
 
-#####  Windows
+    SX1276SetChannel( freq );
 
-###### STM32 BOOTLOADER driver setup for Tlera Corp boards
+    SX1276SetOpMode( RF_OPMODE_RECEIVER );
 
- 1. Download [Zadig](http://zadig.akeo.ie)
- 2. Plugin STM32L0 board and toggle the RESET button while holding down the BOOT button
- 3. Let Windows finish searching for drivers
- 4. Start ```Zadig```
- 5. Select ```Options -> List All Devices```
- 6. Select ```STM32 BOOTLOADER``` from the device dropdown
- 7. Select ```WinUSB (v6.1.7600.16385)``` as new driver
- 8. Click ```Replace Driver```
+    SX1276Delay( 1 );
 
-###### USB Serial driver setup for Tlera Corp boards (Window XP / Windows 7 only)
+    carrierSenseTime = armv6m_systick_millis( );
+    /*
+    // Perform carrier sense for maxCarrierSenseTime
+    while( (uint32_t)( armv6m_systick_millis( ) - carrierSenseTime ) < maxCarrierSenseTime )
+    {
+        rssi = SX1276ReadRssi( );
 
- 1. Go to ~/AppData/Local/Arduino15/packages/TleraCorp/hardware/stm32l0/```<VERSION>```/drivers/windows
- 2. Right-click on ```dpinst_x86.exe``` (32 bit Windows) or ```dpinst_amd64.exe``` (64 bit Windows) and select ```Run as administrator```
- 3. Click on ```Install this driver software anyway``` at the ```Windows Security``` popup as the driver is unsigned
+        if( rssi > rssiThresh )
+        {
+            status = false;
+            break;
+        }
+    }
+    */
 
-###### ST-LINK V2.1 driver setup for STMicroelectronics boards
+    rssi = SX1276ReadRssi( );
+    SX1276SetStby( );
 
- 1. Plugin STMicroelectronics board
- 2. Download and install [ST-Link USB Drivers](http://www.st.com/en/embedded-software/stsw-link009.html)
+    return rssi;
+}
+```
+In this case Radio.IsChannelFree() is still only returning 1 or 0 not matter that body and return type of function SX1276IsChannelFree was changed. Hardcoding RSSI variable to some arbitary numerical value produced same result.
 
-### From git
+### Conclusion
+I was lead to believe that cmwx1zzabz-board.c defines and initializes Radio_s structure which holds pointers to all functions connected with SX1276 chip, most notably SX1276IsChannelFree. Modifying that function had no effect on return value of that function. Using SX1276ReadRssi function directly returned only the minimal possible value, in both of the cases if another Lora Module was transmiting or not. 
 
- 1. Follow steps from Board Manager section above
- 2. ```cd <SKETCHBOOK>```, where ```<SKETCHBOOK>``` is your Arduino Sketch folder:
-  * OS X: ```~/Documents/Arduino```
-  * Linux: ```~/Arduino```
-  * Windows: ```~/Documents/Arduino```
- 3. Create a folder named ```hardware```, if it does not exist, and change directories to it
- 4. Clone this repo: ```git clone https://github.com/grumpyoldpizza/ArduinoCore-stm32l0.git TleraCorp/stm32l0```
- 5. Restart the Arduino IDE
-
-## Recovering from a faulty sketch for Tlera Corp Boards
-
- Sometimes a faulty sketch can render the normal USB Serial based integration into the Arduindo IDE not working. In this case plugin the STM32L0 board and toggle the RESET button while holding down the BOOT button and program a known to be working sketch to go ack to a working USB Serial setup.
-
-## Credits
-
-This core is based on and compatible with the [Arduino SAMD Core](https://github.com/arduino/ArduinoCore-samd)
-
+Displaying readings of RSSI value of current carrier frequency was not achieved.
