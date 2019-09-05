@@ -19,5 +19,5 @@ void setup( void )
 void loop( void )
 {
     Serial.println(LoRaRadio.readRssi());
-    delay(100);
+    delay(1);
 }

@@ -146,7 +146,7 @@ struct Radio_s
      *
      * \retval isFree         [true: Channel is free, false: Channel is not free]
      */
-    int16_t    ( *IsChannelFree )( RadioModems_t modem, uint32_t freq, int16_t rssiThresh, uint32_t maxCarrierSenseTime );
+    bool ( *IsChannelFree )( RadioModems_t modem, uint32_t freq, int16_t rssiThresh, uint32_t maxCarrierSenseTime );
     /*!
      * \brief Sets the reception parameters
      *
@@ -410,6 +410,11 @@ struct Radio_s
      * \retval time Radio plus board wakeup time in ms.
      */
     uint32_t  ( *GetWakeupTime )( void );
+
+    void    ( *SetOpMode)( uint8_t opMode );
+
+    void    (*Delay)( uint32_t timeout );
+
 };
 
 /*!

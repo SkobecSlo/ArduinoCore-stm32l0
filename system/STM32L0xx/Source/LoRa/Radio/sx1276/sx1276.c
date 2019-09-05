@@ -79,13 +79,6 @@ static void SX1276WriteFifo( uint8_t *buffer, uint8_t size );
 static void SX1276ReadFifo( uint8_t *buffer, uint8_t size );
 
 /*!
- * \brief Sets the SX1276 operating mode
- *
- * \param [IN] opMode New operating mode
- */
-static void SX1276SetOpMode( uint8_t opMode );
-
-/*!
  * \brief RxSingle timeout timer callback
  */
 static void SX1276LptimCallback( void *context );
@@ -297,8 +290,8 @@ int16_t SX1276IsChannelFree( RadioModems_t modem, uint32_t freq, int16_t rssiThr
 
     SX1276Delay( 1 );
 
+   /* 
     carrierSenseTime = armv6m_systick_millis( );
-    /*
     // Perform carrier sense for maxCarrierSenseTime
     while( (uint32_t)( armv6m_systick_millis( ) - carrierSenseTime ) < maxCarrierSenseTime )
     {
@@ -310,8 +303,7 @@ int16_t SX1276IsChannelFree( RadioModems_t modem, uint32_t freq, int16_t rssiThr
             break;
         }
     }
-    */
-
+   */ 
     rssi = SX1276ReadRssi( );
     SX1276SetStby( );
 
@@ -1213,7 +1205,7 @@ int16_t SX1276ReadRssi( void )
     return rssi;
 }
 
-static void SX1276SetOpMode( uint8_t opMode )
+void SX1276SetOpMode( uint8_t opMode )
 {
     if( SX1276.OpMode != opMode )
     {

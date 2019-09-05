@@ -1033,28 +1033,28 @@ void LoRaRadioClass::__CadDone(bool cadDetected)
 
 int16_t LoRaRadioClass::readRssi()
 {
-    
-    IRQn_Type irq;
-    bool isChannelFree;
+    //SX1276SetStby( );
+    Radio.Standby();
 
-    if (!_initialized) {
-        return 0;
-    }
+    //SX1276SetModem( modem );
+    Radio.SetModem(MODEM_LORA);
 
-    irq = (IRQn_Type)((__get_IPSR() & 0x1ff) - 16);
+    //SX1276SetChannel( freq );
+    Radio.SetChannel(868000000);
 
-    if (irq != Reset_IRQn) {
-        return 0;
-    }
+    //SX1276SetOpMode( RF_OPMODE_RECEIVER );
+    Radio.SetOpMode(0x05);
 
-    if (!LoRaRadioCall(__Sense)) {
-        return 0;
-    }
-    
+    //SX1276Delay( 1 );
+    Radio.Delay(1);
 
-    int16_t rssi = Radio.IsChannelFree(MODEM_LORA, _frequency, -65, 10);
+    //SX1276SetStby( );
+    Radio.Standby();
 
-    _busy = 0;
+    //int16_t rssi = Radio.IsChannelFree(MODEM_LORA, _frequency, -65, 10);
+
+    int16_t rssi = Radio.Rssi();
+
     return rssi;
 }
 LoRaRadioClass LoRaRadio;

@@ -502,4 +502,12 @@ void SX1276OnDio1Irq( void );
  */
 void SX1276OnDio2Irq( void );
 
+/*!
+ * \brief Sets the SX1276 operating mode
+ *
+ * \param [IN] opMode New operating mode
+ */
+void SX1276SetOpMode( uint8_t opMode );
+
+
 #endif // __SX1276_H__
