@@ -1051,8 +1051,6 @@ int16_t LoRaRadioClass::readRssi()
     //SX1276SetStby( );
     Radio.Standby();
 
-    //int16_t rssi = Radio.IsChannelFree(MODEM_LORA, _frequency, -65, 10);
-
     int16_t rssi = Radio.Rssi();
 
     return rssi;
