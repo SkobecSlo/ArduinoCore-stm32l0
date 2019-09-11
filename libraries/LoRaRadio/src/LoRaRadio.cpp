@@ -1031,7 +1031,7 @@ void LoRaRadioClass::__CadDone(bool cadDetected)
     self->_cadCallback.queue();
 }
 
-int16_t LoRaRadioClass::readRssi()
+int16_t LoRaRadioClass::readRssi(uint32_t frequency)
 {
     //SX1276SetStby( );
     Radio.Standby();
@@ -1040,7 +1040,7 @@ int16_t LoRaRadioClass::readRssi()
     Radio.SetModem(MODEM_LORA);
 
     //SX1276SetChannel( freq );
-    Radio.SetChannel(868000000);
+    Radio.SetChannel(frequency);
 
     //SX1276SetOpMode( RF_OPMODE_RECEIVER );
     Radio.SetOpMode(0x05);
