@@ -1,12 +1,15 @@
 #include "LoRaRadio.h"
 
-uint32_t start_freq = 100000000; //100 MHz
-uint32_t end_freq = 1000000000; //1 GHz
-uint32_t step_freq = 1000000; //1MHz
-int16_t buffer[900];
+#define START_FREQ      8600 //780.0 MHz
+#define END_FREQ        8700 //950.0 MHz
+#define STEP_FREQ       1 //.5 MHz
+#define MAX_NUM_SAMPLES 300 //
+
+int16_t buffer[MAX_NUM_SAMPLES][2];
+
 void setup( void )
 {
-    Serial.begin(115200);
+    Serial.begin(9600);
     
     while (!Serial) { }
 
@@ -22,16 +25,34 @@ void setup( void )
 
 void loop( void )
 {
-uint16_t i = 0;
-    for(uint32_t freq = start_freq; freq<end_freq; freq += step_freq)
+    uint32_t start = armv6m_systick_millis( );
+    uint16_t num_steps = LoRaRadio.readSpectrumRssi(buffer, 
+                                                    MAX_NUM_SAMPLES, 
+                                                    START_FREQ, 
+                                                    END_FREQ, 
+                                                    STEP_FREQ);
+    
+    uint32_t end = armv6m_systick_millis( );
+    if(num_steps != 0)
     {
-        buffer[i] = LoRaRadio.readRssi(freq);
-        i++;
+        Serial.println("Spectrum reading done");
     }
-    for(uint16_t f = 0; f < 900; f++)
+    else
     {
-        Serial.println(buffer[f]);
+        Serial.println("Spectrum reading not done!");
+        while(1);
     }
 
-    delay(10000);
+    Serial.print("Elapsed time: ");
+    Serial.print(end - start);
+    Serial.println(" ms");
+
+    for(uint16_t i = 0; i < num_steps; i++)
+    {
+        Serial.print(buffer[i][0]);
+        Serial.print(", ");
+        Serial.println(buffer[i][1]);
+            }
+
+    while(1);
 }

@@ -1055,4 +1055,132 @@ int16_t LoRaRadioClass::readRssi(uint32_t frequency)
 
     return rssi;
 }
+
+/*
+ * @brief Function scans desired radio spectrum and saves Rssi values into
+ * given buffer arry  
+ *
+ * @param[in] buffer, 2D array, first column represents scanned frequency in 
+ * multiples of 100 kHz, second one represents saved Rssi values
+ * @param[in] number of rows in buffer
+ * @param[in] start_freq in multiples of 100 kHz
+ * @param[in] end_freq in multiples of 100 kHz
+ * @param[in] step_freq in multiples of 100 kHz
+ *
+ * @return 0 if buffer was too small, otherwise number of steps
+ *
+ */
+uint16_t LoRaRadioClass::readSpectrumRssi(int16_t array[][2],
+                                      uint16_t max_samples,
+                                      uint16_t start_freq,
+                                      uint16_t end_freq, 
+                                      uint16_t step_freq)
+{
+    uint16_t freq = start_freq;
+
+    //Determine number of steps, any remainder is truncated
+    uint16_t num_steps = (end_freq - start_freq) / step_freq;
+
+    if(max_samples < num_steps)
+    {
+        return 0;
+    }
+    
+    for(uint16_t i = 0; i < num_steps; i++)
+    {
+        array[i][0] = freq;
+        array[i][1] = readRssi(freq*100000);
+        freq += step_freq;
+    }
+    return num_steps;
+}
+
+/*
+ * @brief Function scans desired radio spectrum several times 
+ * and saves Rssi values into given buffer arry.
+ *
+ * @param[in] buffer, 2D array, first column represents scanned frequency in 
+ * multiples of 100 kHz, second one represents saved Rssi values. Function
+ * scans desired specter several times, each time a specter is scanned, it is
+ * added at the end of previous specter scan.
+ *
+ * @param[in] max number of samples per scan that is allowed 
+ * @param[in] start_freq in multiples of 100 kHz
+ * @param[in] end_freq in multiples of 100 kHz
+ * @param[in] step_freq in multiples of 100 kHz
+ * @param[in] step_freq in multiples of 100 kHz
+ * @param[in] number of scans of the whole desired specter
+ *
+ * @return 0 if buffer was too small, otherwise number of steps
+ *
+ */
+uint16_t LoRaRadioClass::readWaterfallRssi(int16_t array[][2],
+                                           uint16_t max_samples_per_scan,
+                                           uint16_t start_freq,
+                                           uint16_t end_freq, 
+                                           uint16_t step_freq,
+                                           uint16_t num_scans)
+{
+    uint16_t freq = start_freq;
+
+    //Determine number of points per scan, any remainder is truncated
+    uint16_t num_points = (end_freq - start_freq) / step_freq;
+
+    if(max_samples_per_scan < num_points)
+    {
+        return 0;
+    }
+
+    for(uint16_t j = 0; j < num_scans; j++)
+    { 
+        for(uint16_t i = 0; i < num_points; i++)
+        {
+            array[i+j*num_points][0] = freq;
+            array[i+j*num_points][1] = readRssi(freq*100000);
+            freq += step_freq;
+        }
+        freq = start_freq; 
+    }
+    return num_points;
+}
+
+/*
+ * @brief Function prints buffer array containing flatten spectrum rssi 
+ *  measurments.
+ *
+ * @param[in] buffer, 2D array, first column represents scanned frequency in 
+ * multiples of 100 kHz, second one represents saved Rssi values. 
+ *
+ * @param[in] number of points per specter scan
+ * @param[in] number of scans of the whole desired specter
+ *
+ * @note paramter num_pointes has to be the same as the one that is returned
+ * readWaterfallRssi method.
+ *
+ * @return none
+ *
+ */
+void LoRaRadioClass::printWaterfallRssi(int16_t array[][2],
+                                        uint16_t num_points,
+                                        uint16_t num_scans)
+{
+    for(uint16_t i = 0; i < num_points; i++)
+    {
+        Serial.print(array[i][0]);
+        for(uint16_t j = 0; j < num_scans; j++)
+        {
+            Serial.print(", ");
+            if(j == (num_scans - 1))
+            {
+                Serial.println(array[i+j*num_points][1]);
+            }
+            else
+            {
+                Serial.print(array[i+j*num_points][1]);
+            }
+        }
+    }
+} 
+        
+
 LoRaRadioClass LoRaRadio;

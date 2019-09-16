@@ -127,6 +127,20 @@ public:
     void onCad(void(*callback)(void));
     void onCad(Callback callback);
     int16_t readRssi(uint32_t frequency);
+    uint16_t readSpectrumRssi(int16_t array[][2],
+                              uint16_t num_rows,
+                              uint16_t start_freq,
+                              uint16_t end_freq, 
+                              uint16_t step_freq);
+    uint16_t readWaterfallRssi(int16_t array[][2],
+                               uint16_t samples_per_scan,
+                               uint16_t start_freq,
+                               uint16_t end_freq, 
+                               uint16_t step_freq,
+                               uint16_t num_scans);
+    void printWaterfallRssi(int16_t array[][2],
+                            uint16_t num_points,
+                            uint16_t num_scans);
 
 private:
     bool              _initialized;
