@@ -1,7 +1,7 @@
 #include "LoRaRadio.h"
 
-#define START_FREQ      8600 //780.0 MHz
-#define END_FREQ        8700 //950.0 MHz
+#define START_FREQ      8630 //780.0 MHz
+#define END_FREQ        8730 //950.0 MHz
 #define STEP_FREQ       1 //.5 MHz
 #define SAMPLES_PER_SCAN 101 //
 #define SCANS       20
